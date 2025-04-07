@@ -2,15 +2,15 @@ import Home from "@/components/home/Home";
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams; // ✅ Correct way to get search params
+// export async function GET(request: NextRequest) {
+//   const searchParams = request.nextUrl.searchParams; // ✅ Correct way to get search params
 
-  const type = searchParams.get("type") || "all";
-  const page = parseInt(searchParams.get("page") || "1", 10);
-  const limit = parseInt(searchParams.get("limit") || "10", 10);
+//   const type = searchParams.get("type") || "all";
+//   const page = parseInt(searchParams.get("page") || "1", 10);
+//   const limit = parseInt(searchParams.get("limit") || "10", 10);
 
-  return NextResponse.json({ type, page, limit });
-}
+//   return NextResponse.json({ type, page, limit });
+// }
 
 
 export default async function Index({ searchParams }: { searchParams: { [key: string]: string | undefined } }) {
