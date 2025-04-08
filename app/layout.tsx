@@ -1,7 +1,6 @@
 import { GeistSans } from "geist/font/sans";
 import "./globals_op.css";
 import "./custom_tailwind.css";
-import { createClient } from "@/utils/supabase/server";
 import Header from "@/components/Header";
 
 
@@ -20,11 +19,6 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-
-  const {
-    data: { user },
-  } = await createClient().auth.getUser();
-
 
   return (
     <html lang="en" className={GeistSans.className} suppressHydrationWarning>
