@@ -22,7 +22,9 @@ const Pages = ({ selectedWriting }: WritingProps) => {
     useEffect(() => {
         if (selectedWriting) {
             var tempSelectedText = `<div style='font-size:20px; text-align:center'>${selectedWriting.title}</div><br/>` + `<div>${selectedWriting.text.replace(/\\n/g, "<hr style='opacity:0;margin:1px' />")}</div>`;
-            setTextToRead(tempSelectedText);
+            setTimeout(() => {
+                setTextToRead(tempSelectedText);
+            }, 100);
             setTitle(selectedWriting.title);
         } else {
             setTextToRead(null);
