@@ -13,6 +13,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   return {
     title: (data as any[])[0].title,
     description: (data as any[])[0].text.substring(0, 100) + "...",
+    icons: {
+      icon: "/Icon/favicon.ico",
+    },
   };
 }
 
