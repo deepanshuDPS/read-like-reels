@@ -4,14 +4,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import Masonry from "react-masonry-css";
+import OpenAI from 'openai';
+import { createClient } from "@/utils/supabase/client";
+import { userAgent } from "next/server";
 
 
 type WritingProps = {
   writings: any[] | null;
   type: string
+  pages: number
+  currentPage: number
 }
 
-const Home = ({ writings, type }: WritingProps) => {
+const Home = ({ writings, type, pages, currentPage }: WritingProps) => {
 
   // Breakpoints for different screen sizes
   const breakpointColumns = {
@@ -30,6 +35,56 @@ const Home = ({ writings, type }: WritingProps) => {
   //   "bg-rose-200", "bg-cyan-200",
   //   "bg-amber-200", "bg-violet-200",
   // ];
+
+  const openai = new OpenAI({
+    apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY, // Store this in .env
+    dangerouslyAllowBrowser: true
+  });
+  const supabase = createClient();
+
+  const searchWriting = async (userPrompt: string) => {
+    const response = await openai.embeddings.create({
+      model: "text-embedding-3-small", // supports Hindi & English
+      input: userPrompt,
+    });
+    const promptEmbedding = response.data[0].embedding;
+    const { data, error } = await supabase.rpc("match_writings", {
+      query_embedding: promptEmbedding,
+      match_threshold: 0.2 , // Adjust as needed
+      match_count: 100,
+    });
+
+    if (error) console.error("❌ Error in search:", error);
+    else console.log("🔍 Search Results:", data);
+  }
+
+  // const generateEmbeddedText = async (id:number) => {
+
+  //   const supabase = createClient();
+  //   const writings = await supabase.from("writings").select("*").eq("id", id);
+  //   writings.data?.forEach(async (item) => {
+  //     const text = `${item.title} ${item.text}`; // Full text for semantic meaning
+  //     const embeddingResponse = await openai.embeddings.create({
+  //       model: "text-embedding-3-small",
+  //       input: text,
+  //     });
+  //     console.log(item.id, item.title, item.embedding);
+  //     const embedding = embeddingResponse.data[0].embedding;
+  //     console.log(embedding);
+  //     const { data, error } = await supabase
+  //       .from("writings")
+  //       .update({ embedding })
+  //       .eq("id", item.id);
+
+  //     if (error) {
+  //       console.error("❌ Update error:", error.message);
+  //     } else {
+  //       console.log("✅ Update successful:", data);
+  //     }
+  //   });
+  // }
+
+
   const types = ["quote", "poem", "paragraph", "story", "essay"];
   const menuItems = [{
     title: "Quotes",
@@ -53,15 +108,32 @@ const Home = ({ writings, type }: WritingProps) => {
     readMode: true
   }];
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [openedIndexes, setOpenedIndexes] = useState<number[]>([]);
+  const [value, setValue] = useState('');
   const router = useRouter()
 
+  const handleChange = (event: any) => {
+    const numericValue = event.target.value.replace(/[^0-9]/g, ''); // Remove non-numeric characters
+    setValue(numericValue);
+  }; const [openedIndexes, setOpenedIndexes] = useState<number[]>([]);
+
+  const handleKeyDown = (e: any) => {
+    if (e.key === "Enter") {
+      const pageNumber = parseInt(value);
+      if (pageNumber > 0 && pageNumber <= pages) {
+        router.push("?type=" + types[selectedIndex] + "&page=" + pageNumber);
+      } else {
+        alert("Please enter a valid page number");
+      }
+    }
+  };
   useEffect(() => {
+    setValue(currentPage.toString())
     setOpenedIndexes([])
     setSelectedIndex(types.indexOf(type))
-  }, [type])
+  }, [type, currentPage])
 
-//${bgColors[index % bgColors.length]}
+
+  //${bgColors[index % bgColors.length]}
   return (
     <div className="w-full flex flex-col pb-8">
       <div className="flex w-full items-center -top-[180px] md:-top-[140px] pb-16 sticky z-10" >
@@ -70,7 +142,10 @@ const Home = ({ writings, type }: WritingProps) => {
           <div className="flex flex-row bg-white rounded-full  py-1 pl-6 pr-1 my-4 w-[300px] md:w-[700px]">
             {/* shadow-md */}
             <input className="bg-transparent w-full border-none outline-none pointer-events-none opacity-50" placeholder="This feature coming soon" />
-            <button className="bg-black rounded-full px-4 md:px-16 py-2 text-white text-sm font-medium pointer-events-none  opacity-50">Search</button>
+            <button className="bg-black rounded-full px-4 md:px-16 py-2 text-white text-sm font-medium opacity-50" onClick={() => {
+              //generateEmbeddedText(2)
+              // searchWriting("searching meaning in life");
+            }}>Search</button>
           </div>
         </div>
 
@@ -125,7 +200,14 @@ const Home = ({ writings, type }: WritingProps) => {
           })}
         </Masonry>
       </div>
-
+      <div className="flex flex-row justify-center items-center">
+        {currentPage > 1 && <Link href={"?type=" + types[selectedIndex] + "&page=" + (currentPage - 1)} className="text-black font-semibold text-sm cursor-pointer">← Previous</Link>}
+        <input className="w-8 h-6 mx-2 text-center p-0 border-black rounded-md border-[1px]"
+          value={value}
+          onKeyDown={handleKeyDown}
+          onChange={handleChange} /> of {pages}
+        {currentPage < pages && <Link href={"?type=" + types[selectedIndex] + "&page=" + (currentPage + 1)} className="mx-2 text-black font-semibold text-sm cursor-pointer">Next →</Link>}
+      </div>
     </div >
   );
 };

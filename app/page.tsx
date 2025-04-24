@@ -9,15 +9,17 @@ export default async function Index({ searchParams }: { searchParams: { [key: st
   const limit = 10
   const offset = (page - 1) * limit;
 
-  let query = supabase.from("writings")
-    .select("*") // Only fetch first 200 chars
+  let query = supabase
+    .from("writings")
+    .select("*", { count: "exact" }) // this adds a count of total rows
     .range(offset, offset + limit - 1);
   if (type !== "all") query = query.eq("type", type);
 
-  const { data, error } = await query;
+  const { data, count, error } = await query;
+  const totalPages = Math.ceil((count ?? 10) / limit);
   return (
     <>
-      <Home writings={data} type={type} />
+      <Home writings={data} type={type} pages={totalPages} currentPage={page} />
     </>
   );
 }
