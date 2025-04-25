@@ -17,18 +17,34 @@ const Pages = ({ selectedWriting }: WritingProps) => {
     const [title, setTitle] = useState<string | null>(null);
     const [textToRead, setTextToRead] = useState<string | null>(null);
     const [openedPages, setOpenedPages] = useState<number>(-1)
+    const [value, setValue] = useState('');
+    const [openedIndexes, setOpenedIndexes] = useState<number[]>([]);
 
+    const handleChange = (event: any) => {
+        const numericValue = event.target.value.replace(/[^0-9]/g, ''); // Remove non-numeric characters
+        setValue(numericValue);
+    };
+
+
+    const handleKeyDown = (e: any) => {
+        if (e.key === "Enter") {
+            const pageNumber = parseInt(value);
+            if (openedPages > 0 && pageNumber <= pages.length) {
+                setOpenedPages(pageNumber - 1);
+            } else {
+                alert("Please enter a valid page number");
+            }
+        }
+    };
 
     useEffect(() => {
         if (selectedWriting) {
             var tempSelectedText = `<div style='font-size:20px; text-align:center'>${selectedWriting.title}</div><br/>` + `<div>${selectedWriting.text.replace(/\\n/g, "<hr style='opacity:0;margin:1px' />")}</div>`;
             setTextToRead(tempSelectedText);
-            console.log(window.history.length)
-            if ([1,2].includes(window.history.length)) {
+            if ([1, 2].includes(window.history.length)) {
                 setTimeout(() => {
-                    // console.log("here");
-                    setTextToRead(tempSelectedText+"<br/>");
-                }, 500);
+                    setTextToRead(tempSelectedText + "<br/>");
+                }, 250);
             }
             setTitle(selectedWriting.title);
         } else {
@@ -69,6 +85,7 @@ const Pages = ({ selectedWriting }: WritingProps) => {
                 setOpenedPages(-1)
             } else if (tempPages.length > 1) {
                 setOpenedPages(1)
+                setValue("1")
             } else {
                 setOpenedPages(0)
             }
@@ -89,7 +106,39 @@ const Pages = ({ selectedWriting }: WritingProps) => {
             >
                 {/* <div className="text-2xl text-center my-4">{title}</div> */}
                 <BookLayout pages={pages} title={title} author={selectedWriting.author} openedPages={openedPages ?? 0} />
-                <div className="flex-row gap-4 w-full justify-center items-center my-4 hidden md:flex font-sans">
+                {pages.length >1 && <div className="flex flex-row justify-center items-center my-4">
+                    {openedPages > 1 && <button
+                        onClick={() => {
+                            if (openedPages > 1) {
+                                if (openedPages - 2 != 0) {
+                                    setOpenedPages(openedPages - 2)
+                                    setValue((openedPages - 2).toString())
+                                } else {
+                                    setOpenedPages(1)
+                                    setValue("1")
+                                }
+                            }
+                        }}
+                        className="text-black font-semibold text-sm cursor-pointer">← Previous</button>}
+                    <input className="w-8 h-6 mx-2 text-center p-0 border-black rounded-md border-[1px]"
+                        value={value}
+                        onKeyDown={handleKeyDown}
+                        onChange={handleChange} /> of {pages.length}
+                    {openedPages < pages.length && <button
+                        onClick={() => {
+                            if (openedPages <= pages.length - 1) {
+                                if (openedPages + 2 != pages.length + 1) {
+                                    setOpenedPages(openedPages + 2)
+                                    setValue((openedPages + 2).toString())
+                                } else {
+                                    setOpenedPages(pages.length)
+                                    setValue(pages.length.toString())
+                                }
+                            }
+                        }}
+                        className="mx-2 text-black font-semibold text-sm cursor-pointer">Next →</button>}
+                </div>}
+                {/* <div className="flex-row gap-4 w-full justify-center items-center my-4 hidden md:flex font-sans">
                     {openedPages > 1 &&
                         <button
                             onClick={() => {
@@ -114,7 +163,7 @@ const Pages = ({ selectedWriting }: WritingProps) => {
                         >
                             {"Next >>"}
                         </button>}
-                </div>
+                </div> */}
             </div>}
         </div >
     );
