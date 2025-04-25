@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     });
     const response = await openai.embeddings.create({
       model: "text-embedding-ada-002", // supports Hindi & English
-      input: body.userPrompt,
+      input: body.userPrompt.replace(/[!"#$%&'()*+,\-./:;<=>?@[\]^_`{|}~]/g, ''),
     });
     const promptEmbedding = response.data[0].embedding;
     let data = null
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     let response1 = await supabase.rpc("match_writings", {
       query_embedding: promptEmbedding,
       match_threshold: 0.775, // Adjust as needed
-      match_count: 100,
+      match_count: 30,
     });
     data = response1.data
     error = response1.error
@@ -29,7 +29,15 @@ export async function POST(req: Request) {
       let response2 = await supabase.rpc("match_writings", {
         query_embedding: promptEmbedding,
         match_threshold: 0.725, // Again try
-        match_count: 100,
+        match_count: 20,
+      });
+      data = response2.data
+      error = response2.error
+    } else if (!error && data.length < 2) {
+      let response2 = await supabase.rpc("match_writings", {
+        query_embedding: promptEmbedding,
+        match_threshold: 0.7, // Again try
+        match_count: 10,
       });
       data = response2.data
       error = response2.error

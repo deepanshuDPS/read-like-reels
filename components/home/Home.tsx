@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Masonry from "react-masonry-css";
-import OpenAI from 'openai';
-import { createClient } from "@/utils/supabase/client";
 
 type WritingProps = {
   writings: any[] | null;
@@ -24,62 +22,6 @@ const Home = ({ writings, type, pages, currentPage }: WritingProps) => {
     1024: 2, // 2 columns on medium screens
     640: 1, // 1 column on small screens
   };
-
-  const openai = new OpenAI({
-    apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY, // Store this in .env
-    dangerouslyAllowBrowser: true
-  });
-
-  const generateKeywords = async (text: string) => {
-    const prompt = `Extract relevant keywords related to feelings/emotions/thoughts from the following text with no duplicates:\n\n${text}\n\nKeywords:`;
-    let maxTokens = 500
-    if (text.split(" ").length < 500) {
-      maxTokens = text.split(" ").length
-    }
-
-    try {
-      const response = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages: [{ role: 'system', content: prompt }],
-        max_tokens: Math.floor(maxTokens * 4 / 3),
-        temperature: 0.75,
-      });
-
-      // Extracting the keywords from the model's response
-      const ks = response.choices[0].message.content ?? ""
-      const keywords = ks?.trim().split(',').map(keyword => keyword.trim());
-      const finalKeywords = keywords.filter((it) => it.trim() != '');
-      return finalKeywords;
-    } catch (error) {
-      console.error('Error generating keywords:', error);
-    }
-  }
-
-  const generateEmbeddedText = async () => {
-    const supabase = createClient();
-    const writings = await supabase.from("writings").select("*").is("embedding", null).limit(5);
-    writings.data?.forEach(async (item) => {
-      let keywords = await generateKeywords(item.text.replace(/ +/g, ' '))
-      let stringKeywords = keywords?.join(", ") ?? ""
-      console.log(stringKeywords)
-      // // Example for updating embeddings
-      const embedding = await generateEmbedding(stringKeywords);
-      const { data, error } = await supabase.from("writings").update({ embedding }).eq("id", item.id);
-      if (error) {
-        console.error("❌ Update error:", error.message);
-      } else {
-        console.log("✅ Update successful:", data);
-      }
-    });
-  }
-
-  async function generateEmbedding(text: string) {
-    const response = await openai.embeddings.create({
-      model: "text-embedding-ada-002",
-      input: text,
-    });
-    return response.data[0].embedding;
-  }
 
   const searchWriting = async (userPrompt: string) => {
     setSearchProgress(true)
@@ -100,7 +42,6 @@ const Home = ({ writings, type, pages, currentPage }: WritingProps) => {
       setSearchResults(data)
       setSearchProgress(false)
     } catch (e: any) {
-      console.log("Something went wrong")
       setSearchProgress(false)
     }
   }
@@ -134,8 +75,13 @@ const Home = ({ writings, type, pages, currentPage }: WritingProps) => {
   const [searchText, setSearchText] = useState('')
   const router = useRouter()
 
-  const searchTextClick = () => {
-    if (searchText.length < 3) {
+  const searchTextClick = (textToSearch: string | null = null) => {
+
+    if(textToSearch!=null){
+      setSearchText(textToSearch)
+      searchWriting(textToSearch);
+    }
+    else if (searchText.length < 3) {
       alert("Search length must be greator than 3")
     } else {
       searchWriting(searchText);
@@ -179,7 +125,7 @@ const Home = ({ writings, type, pages, currentPage }: WritingProps) => {
           <div className="flex flex-row bg-white rounded-full  py-1 pl-6 pr-1 my-4 w-[300px] md:w-[700px]">
             {/* shadow-md */}
             <input className="bg-transparent w-full border-none outline-none"
-              placeholder="Try writing something (about love, about mind)" value={searchText}
+              placeholder="Try writing something" value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
               onKeyDown={handleKeyDownSearch}
               maxLength={50} />
@@ -191,6 +137,17 @@ const Home = ({ writings, type, pages, currentPage }: WritingProps) => {
               // generateEmbeddedText()
               searchTextClick()
             }}>Search</button>
+          </div>
+          <div className="flex flex-wrap justify-center overflow-x-clip space-x-2 items-center">
+            {['what is results',
+              'how to make decisions',
+              'meaning of life',
+              'about love'].map((it) => (<button className="rounded-full bg-gray-200 px-2 shadow-sm my-1"
+                onClick={() => {
+                  searchTextClick(it)
+                }}>
+                {it}
+              </button>))}
           </div>
         </div>
 

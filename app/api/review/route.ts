@@ -10,8 +10,6 @@ export async function POST(req: Request) {
   let beforeReviewerHash = body.reviewer_id
 
   const bcrypt = require('bcrypt');
-  // const fixedSalt = bcrypt.genSaltSync(10)
-  // console.log(fixedSalt)
   const encReviewer = await bcrypt.hash(beforeReviewerHash, '$2b$10$J0OkHps9xcjn47AudiWrVO');
   const uniqueReviewedData = body.reviewed_data.filter((item: any, index: number, self: any) =>
     index === self.findIndex((t: any) => t.question_id === item.question_id)
