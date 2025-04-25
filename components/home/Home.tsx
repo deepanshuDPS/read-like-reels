@@ -6,8 +6,6 @@ import React, { useEffect, useRef, useState } from "react";
 import Masonry from "react-masonry-css";
 import OpenAI from 'openai';
 import { createClient } from "@/utils/supabase/client";
-import { userAgent } from "next/server";
-
 
 type WritingProps = {
   writings: any[] | null;
@@ -18,6 +16,8 @@ type WritingProps = {
 
 const Home = ({ writings, type, pages, currentPage }: WritingProps) => {
 
+  const [isSearching, setSearchProgress] = useState(false)
+  const [searchResults, setSearchResults] = useState<any[]>([])
   // Breakpoints for different screen sizes
   const breakpointColumns = {
     default: 3, // 3 columns on large screens
@@ -25,64 +25,86 @@ const Home = ({ writings, type, pages, currentPage }: WritingProps) => {
     640: 1, // 1 column on small screens
   };
 
-  // const bgColors = [
-  //   "bg-blue-200", "bg-green-200",
-  //   "bg-yellow-200", "bg-purple-200",
-  //   "bg-pink-200", "bg-indigo-200",
-  //   "bg-red-200",
-  //   "bg-teal-200", "bg-orange-200",
-  //   "bg-gray-200", "bg-lime-200",
-  //   "bg-rose-200", "bg-cyan-200",
-  //   "bg-amber-200", "bg-violet-200",
-  // ];
-
   const openai = new OpenAI({
     apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY, // Store this in .env
     dangerouslyAllowBrowser: true
   });
-  const supabase = createClient();
 
-  const searchWriting = async (userPrompt: string) => {
-    const response = await openai.embeddings.create({
-      model: "text-embedding-3-small", // supports Hindi & English
-      input: userPrompt,
-    });
-    const promptEmbedding = response.data[0].embedding;
-    const { data, error } = await supabase.rpc("match_writings", {
-      query_embedding: promptEmbedding,
-      match_threshold: 0.2 , // Adjust as needed
-      match_count: 100,
-    });
+  const generateKeywords = async (text: string) => {
+    const prompt = `Extract relevant keywords related to feelings/emotions/thoughts from the following text with no duplicates:\n\n${text}\n\nKeywords:`;
+    let maxTokens = 500
+    if (text.split(" ").length < 500) {
+      maxTokens = text.split(" ").length
+    }
 
-    if (error) console.error("❌ Error in search:", error);
-    else console.log("🔍 Search Results:", data);
+    try {
+      const response = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'system', content: prompt }],
+        max_tokens: Math.floor(maxTokens * 4 / 3),
+        temperature: 0.75,
+      });
+
+      // Extracting the keywords from the model's response
+      const ks = response.choices[0].message.content ?? ""
+      const keywords = ks?.trim().split(',').map(keyword => keyword.trim());
+      const finalKeywords = keywords.filter((it) => it.trim() != '');
+      return finalKeywords;
+    } catch (error) {
+      console.error('Error generating keywords:', error);
+    }
   }
 
-  // const generateEmbeddedText = async (id:number) => {
+  const generateEmbeddedText = async () => {
+    const supabase = createClient();
+    const writings = await supabase.from("writings").select("*").is("embedding", null).limit(5);
+    writings.data?.forEach(async (item) => {
+      let keywords = await generateKeywords(item.text.replace(/ +/g, ' '))
+      let stringKeywords = keywords?.join(", ") ?? ""
+      console.log(stringKeywords)
+      // // Example for updating embeddings
+      const embedding = await generateEmbedding(stringKeywords);
+      const { data, error } = await supabase.from("writings").update({ embedding }).eq("id", item.id);
+      if (error) {
+        console.error("❌ Update error:", error.message);
+      } else {
+        console.log("✅ Update successful:", data);
+      }
+    });
+  }
 
-  //   const supabase = createClient();
-  //   const writings = await supabase.from("writings").select("*").eq("id", id);
-  //   writings.data?.forEach(async (item) => {
-  //     const text = `${item.title} ${item.text}`; // Full text for semantic meaning
-  //     const embeddingResponse = await openai.embeddings.create({
-  //       model: "text-embedding-3-small",
-  //       input: text,
-  //     });
-  //     console.log(item.id, item.title, item.embedding);
-  //     const embedding = embeddingResponse.data[0].embedding;
-  //     console.log(embedding);
-  //     const { data, error } = await supabase
-  //       .from("writings")
-  //       .update({ embedding })
-  //       .eq("id", item.id);
+  async function generateEmbedding(text: string) {
+    const response = await openai.embeddings.create({
+      model: "text-embedding-ada-002",
+      input: text,
+    });
+    return response.data[0].embedding;
+  }
 
-  //     if (error) {
-  //       console.error("❌ Update error:", error.message);
-  //     } else {
-  //       console.log("✅ Update successful:", data);
-  //     }
-  //   });
-  // }
+  const searchWriting = async (userPrompt: string) => {
+    setSearchProgress(true)
+    try {
+      const response = await fetch("/api/search", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userPrompt
+        }),
+      })
+      let data = (await response.json())['data'] ?? []
+      if (data.length == 0) {
+        alert("Nothing Found")
+      }
+      setSearchResults(data)
+      setSearchProgress(false)
+    } catch (e: any) {
+      console.log("Something went wrong")
+      setSearchProgress(false)
+    }
+  }
+
 
 
   const types = ["quote", "poem", "paragraph", "story", "essay"];
@@ -109,7 +131,16 @@ const Home = ({ writings, type, pages, currentPage }: WritingProps) => {
   }];
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [value, setValue] = useState('');
+  const [searchText, setSearchText] = useState('')
   const router = useRouter()
+
+  const searchTextClick = () => {
+    if (searchText.length < 3) {
+      alert("Search length must be greator than 3")
+    } else {
+      searchWriting(searchText);
+    }
+  }
 
   const handleChange = (event: any) => {
     const numericValue = event.target.value.replace(/[^0-9]/g, ''); // Remove non-numeric characters
@@ -124,6 +155,12 @@ const Home = ({ writings, type, pages, currentPage }: WritingProps) => {
       } else {
         alert("Please enter a valid page number");
       }
+    }
+  };
+
+  const handleKeyDownSearch = (e: any) => {
+    if (e.key === "Enter") {
+      searchTextClick()
     }
   };
   useEffect(() => {
@@ -141,10 +178,18 @@ const Home = ({ writings, type, pages, currentPage }: WritingProps) => {
           <div className="text-xl text-center px-4">AI Search – Find writings that match what's on your mind.</div>
           <div className="flex flex-row bg-white rounded-full  py-1 pl-6 pr-1 my-4 w-[300px] md:w-[700px]">
             {/* shadow-md */}
-            <input className="bg-transparent w-full border-none outline-none pointer-events-none opacity-50" placeholder="This feature coming soon" />
-            <button className="bg-black rounded-full px-4 md:px-16 py-2 text-white text-sm font-medium opacity-50" onClick={() => {
-              //generateEmbeddedText(2)
-              // searchWriting("searching meaning in life");
+            <input className="bg-transparent w-full border-none outline-none"
+              placeholder="Try writing something (about love, about mind)" value={searchText}
+              onChange={(event) => setSearchText(event.target.value)}
+              onKeyDown={handleKeyDownSearch}
+              maxLength={50} />
+            {searchResults.length != 0 && <button className="bg-gray-200 h-fit self-center px-2 py-1 rounded-full text-xs mx-2" onClick={() => {
+              setSearchResults([])
+              setSearchText('')
+            }}>Clear</button>}
+            <button className="bg-black rounded-full px-4 md:px-16 py-2 text-white text-sm font-medium" onClick={() => {
+              // generateEmbeddedText()
+              searchTextClick()
             }}>Search</button>
           </div>
         </div>
@@ -152,7 +197,7 @@ const Home = ({ writings, type, pages, currentPage }: WritingProps) => {
         <div className="flex w-full flex-col-reverse items-center bg-gray-200 rounded-b-[64px] absolute h-32 bottom-0 px-8 md:px-40 px-auto">
           <div className="flex flex-row justify-start md:justify-center gap-5 md:gap-14 mb-4 overflow-x-scroll md:overflow-x-hidden w-[300px] md:w-full" style={{ scrollbarWidth: 'none' }}>
             {menuItems.map((item, index) => (
-              <Link key={index} className={`cursor-pointer ` + (selectedIndex === index ? "text-blue-700 font-semibold text-[17px] md:text-xl" : "text-gray-500 font-medium text-base md:text-lg ")}
+              <Link key={index} className={`cursor-pointer ` + (selectedIndex === index && searchResults.length == 0 ? "text-blue-700 font-semibold text-[17px] md:text-xl" : "text-gray-500 font-medium text-base md:text-lg ")}
                 href={"?type=" + types[index]}
               >
                 {item.title}
@@ -164,7 +209,12 @@ const Home = ({ writings, type, pages, currentPage }: WritingProps) => {
         </div>
       </div>
       <div className="flex flex-col px-4 md:px-44">
-        <Masonry
+        {isSearching && <div className="text-center mt-4">
+          <p className="text-lg font-semibold text-gray-700 animate-fadeInOut">
+            Searching...
+          </p>
+        </div>}
+        {!isSearching && searchResults.length == 0 && <Masonry
           breakpointCols={breakpointColumns}
           className="flex gap-6 p-6"
           style={{ fontFamily: "Tiro Devanagari Hindi" }}
@@ -198,16 +248,54 @@ const Home = ({ writings, type, pages, currentPage }: WritingProps) => {
               <h2 className="text-xs font-light text-black my-1 italic">- {item.author}</h2>
             </div>)
           })}
-        </Masonry>
+        </Masonry>}
+        {!isSearching && searchResults.length != 0 && <div className="px-6 text-sm text-gray-600 mt-4">{searchResults.length} Search Results...</div>}
+        {!isSearching && searchResults.length != 0 && <Masonry
+          breakpointCols={breakpointColumns}
+          className="flex gap-6 p-6"
+          style={{ fontFamily: "Tiro Devanagari Hindi" }}
+          columnClassName="masonry-column"
+        >
+          {searchResults?.map((item, index) => {
+            let sIndex = types.indexOf(item.type)
+            let maxLength = menuItems[sIndex].maxLength || 200;
+            let text = item.text
+            let textTrimmed = item.text.replace(/\\n/g, "").length > maxLength
+            return (<div
+              className={`relative bg-[#fdfbfb] shadow-md px-6 pb-6 pt-12 rounded-xl mb-6 cursor-pointer`}
+              onClick={() => {
+                if (!menuItems[sIndex].readMode) {
+                  let newOpenedIndexes = [...openedIndexes]
+                  if (!newOpenedIndexes.includes(index)) {
+                    newOpenedIndexes.push(index)
+                    setOpenedIndexes(newOpenedIndexes)
+                  }
+                } else {
+                  router.push("/read/" + (item.slug ?? "--"))
+                }
+              }}
+            >
+              <div className="h-8 absolute top-0 w-full bg-gradient-to-t from-black to-[#333e46] right-0 left-0 rounded-t-xl shadow-sm "></div>
+              <h2 className="text-xl font-bold my-1">{item.title}</h2>
+              <div className="text-sm -mt-1">{item.type[0].toUpperCase() + item.type.substring(1)}</div>
+              <p className="text-base text-black mb-2" dangerouslySetInnerHTML={{ __html: !openedIndexes.includes(index) ? text.replace(/\\n/g, "<br/>").substring(0, maxLength) : text.replace(/\\n/g, "<br/>") }} />
+              {textTrimmed && !openedIndexes.includes(index) &&
+                <button className="flex items-center text-black font-semibold mt-2">
+                  Read more <span className="ml-2">→</span>
+                </button>}
+              <h2 className="text-xs font-light text-black my-1 italic">- {item.author}</h2>
+            </div>)
+          })}
+        </Masonry>}
       </div>
-      <div className="flex flex-row justify-center items-center">
+      {searchResults.length == 0 && !isSearching && (writings?.length ?? 0) > 0 && <div className="flex flex-row justify-center items-center">
         {currentPage > 1 && <Link href={"?type=" + types[selectedIndex] + "&page=" + (currentPage - 1)} className="text-black font-semibold text-sm cursor-pointer">← Previous</Link>}
         <input className="w-8 h-6 mx-2 text-center p-0 border-black rounded-md border-[1px]"
           value={value}
           onKeyDown={handleKeyDown}
           onChange={handleChange} /> of {pages}
         {currentPage < pages && <Link href={"?type=" + types[selectedIndex] + "&page=" + (currentPage + 1)} className="mx-2 text-black font-semibold text-sm cursor-pointer">Next →</Link>}
-      </div>
+      </div>}
     </div >
   );
 };
