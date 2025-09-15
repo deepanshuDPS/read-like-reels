@@ -42,9 +42,11 @@ const generateEmbeddedText = async () => {
     const embedding = await generateEmbedding(stringKeywords);
     const { data, error } = await supabase.from("writings").update({ embedding }).eq("id", item.id);
     if (error) {
+      console.log("error", embedCount)
       embedCount++
       console.error("❌ Update error:", error.message);
     } else {
+      console.log("success", embedCount)
       embedCount--
       console.log("✅ Update successful:", data);
     }

@@ -122,10 +122,10 @@ const Home = ({ writings, type, pages, currentPage }: WritingProps) => {
       <div className="flex w-full items-center -top-[180px] md:-top-[140px] pb-16 sticky z-10" >
         <div className="flex w-full flex-col items-center justify-center bg-gray-100 rounded-b-[64px] py-8 z-10 md:px-40 px-auto">
           <div className="text-xl text-center px-4">AI Search – Find writings that match what's on your mind.</div>
-          <div className="flex flex-row bg-white rounded-full  py-1 pl-6 pr-1 my-4 w-[300px] md:w-[700px]">
+          <div className="flex flex-row bg-white rounded-full  py-1 pl-6 pr-1 my-4 w-[300px] md:w-[700px] opacity-50 pointer-events-none">
             {/* shadow-md */}
-            <input className="bg-transparent w-full border-none outline-none"
-              placeholder="Try writing something" value={searchText}
+            <input className="bg-transparent w-full border-none outline-none "
+              placeholder="Coming Soon..." value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
               onKeyDown={handleKeyDownSearch}
               maxLength={50} />
@@ -133,12 +133,12 @@ const Home = ({ writings, type, pages, currentPage }: WritingProps) => {
               setSearchResults([])
               setSearchText('')
             }}>Clear</button>}
-            <button className="bg-black rounded-full px-4 md:px-16 py-2 text-white text-sm font-medium" onClick={() => {
+            <button className="bg-black rounded-full px-4 md:px-16 py-2 text-white text-sm font-medium pa" onClick={() => {
               // generateEmbeddedText()
-              searchTextClick()
+              // searchTextClick()
             }}>Search</button>
           </div>
-          <div className="flex flex-wrap justify-center overflow-x-clip space-x-2 items-center">
+          {false && <div className="flex flex-wrap justify-center overflow-x-clip space-x-2 items-center">
             {['what is results',
               'how to make decisions',
               'meaning of life',
@@ -148,7 +148,7 @@ const Home = ({ writings, type, pages, currentPage }: WritingProps) => {
                 }}>
                 {it}
               </button>))}
-          </div>
+          </div>}
         </div>
 
         <div className="flex w-full flex-col-reverse items-center bg-gray-200 rounded-b-[64px] absolute h-32 bottom-0 px-8 md:px-40 px-auto">

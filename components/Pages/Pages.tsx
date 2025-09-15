@@ -106,7 +106,7 @@ const Pages = ({ selectedWriting }: WritingProps) => {
             >
                 {/* <div className="text-2xl text-center my-4">{title}</div> */}
                 <BookLayout pages={pages} title={title} author={selectedWriting.author} openedPages={openedPages ?? 0} />
-                {pages.length >1 && <div className="flex flex-row justify-center items-center my-4">
+                {pages.length >1 && <div className="hidden flex-row justify-center items-center my-4 md:flex">
                     {openedPages > 1 && <button
                         onClick={() => {
                             if (openedPages > 1) {
