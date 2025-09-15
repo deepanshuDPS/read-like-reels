@@ -97,7 +97,7 @@ const Pages = ({ selectedWriting }: WritingProps) => {
         <div className="w-full flex flex-col pb-8">
             <div
                 ref={hiddenRef}
-                className="invisible absolute z-20 top-0 left-0 text-sm md:text-base lg:text-lg w-[340px] h-[500px] md:w-[400px] lg:w-[560px] md:h-[500px] lg:h-[700px] px-6 pt-12 leading-relaxed overflow-hidden"
+                className="invisible absolute z-20 top-0 left-0 text-lg md:text-lg lg:text-xl w-[340px] h-[500px] md:w-[400px] lg:w-[560px] md:h-[500px] lg:h-[700px] px-6 pt-12 leading-relaxed overflow-hidden"
                 style={{ position: "absolute", pointerEvents: "none", zIndex: -1, fontFamily: "Tiro Devanagari Hindi" }}
             />
             {textToRead != null && <div
@@ -106,7 +106,7 @@ const Pages = ({ selectedWriting }: WritingProps) => {
             >
                 {/* <div className="text-2xl text-center my-4">{title}</div> */}
                 <BookLayout pages={pages} title={title} author={selectedWriting.author} openedPages={openedPages ?? 0} />
-                {pages.length >1 && <div className="flex flex-row justify-center items-center my-4">
+                {pages.length >1 && <div className="hidden flex-row justify-center items-center my-4 md:flex">
                     {openedPages > 1 && <button
                         onClick={() => {
                             if (openedPages > 1) {
