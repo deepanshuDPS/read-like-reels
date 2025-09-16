@@ -98,7 +98,7 @@ const Pages = ({ selectedWriting }: WritingProps) => {
             await navigator.share({
               title: title,
               text: `Checkout this ${type == 'story' ? 'Story' : 'essay'}`,
-              url: `${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}/read/${slug}`,
+              url: `/read/${slug}`,
             });
             console.log("Link shared successfully!");
           } catch (err) {
