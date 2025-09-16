@@ -77,7 +77,7 @@ const Home = ({ writings, type, pages, currentPage }: WritingProps) => {
 
   const searchTextClick = (textToSearch: string | null = null) => {
 
-    if(textToSearch!=null){
+    if (textToSearch != null) {
       setSearchText(textToSearch)
       searchWriting(textToSearch);
     }
@@ -115,6 +115,35 @@ const Home = ({ writings, type, pages, currentPage }: WritingProps) => {
     setSelectedIndex(types.indexOf(type))
   }, [type, currentPage])
 
+
+  const handleClick = (index:number,item:any) => {
+    if (!menuItems[selectedIndex].readMode) {
+      let newOpenedIndexes = [...openedIndexes]
+      if (!newOpenedIndexes.includes(index)) {
+        newOpenedIndexes.push(index)
+        setOpenedIndexes(newOpenedIndexes)
+      }
+    } else {
+      router.push("/read/" + (item.slug ?? "--"))
+    }
+  }
+
+  const handleShare = async (title: string, type: string, slug: string) => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: title,
+          text: `Checkout this ${type == 'story' ? 'Story' : 'essay'}`,
+          url: `${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}/read/${slug}`,
+        });
+        console.log("Link shared successfully!");
+      } catch (err) {
+        console.error("Error sharing:", err);
+      }
+    } else {
+      alert("Sharing is not supported in this browser.");
+    }
+  };
 
   //${bgColors[index % bgColors.length]}
   return (
@@ -183,23 +212,17 @@ const Home = ({ writings, type, pages, currentPage }: WritingProps) => {
             let textTrimmed = item.text.replace(/\\n/g, "").length > maxLength
             return (<div
               className={`relative bg-[#fdfbfb] shadow-md px-6 pb-6 pt-12 rounded-xl mb-6 cursor-pointer`}
-              onClick={() => {
-                if (!menuItems[selectedIndex].readMode) {
-                  let newOpenedIndexes = [...openedIndexes]
-                  if (!newOpenedIndexes.includes(index)) {
-                    newOpenedIndexes.push(index)
-                    setOpenedIndexes(newOpenedIndexes)
-                  }
-                } else {
-                  router.push("/read/" + (item.slug ?? "--"))
-                }
-              }}
             >
               <div className="h-8 absolute top-0 w-full bg-gradient-to-t from-black to-[#333e46] right-0 left-0 rounded-t-xl shadow-sm "></div>
-              <h2 className="text-xl font-bold my-1">{item.title}</h2>
-              <p className="text-base text-black mb-2" dangerouslySetInnerHTML={{ __html: !openedIndexes.includes(index) ? text.replace(/\\n/g, "<br/>").substring(0, maxLength) : text.replace(/\\n/g, "<br/>") }} />
+              <div className="flex flex-row items-center justify-between py-2">
+                <h2 className="text-xl font-bold my-1">{item.title}</h2>
+                <svg width="30px" height="30px" viewBox="0 -0.5 25 25" fill="none" xmlns="http://www.w3.org/2000/svg" onClick={() => handleShare(item.title, item.type, item.slug)} className="block md:hidden" type="button">
+                  <path fill-rule="evenodd" clip-rule="evenodd" d="M14.734 15.8974L19.22 12.1374C19.3971 11.9927 19.4998 11.7761 19.4998 11.5474C19.4998 11.3187 19.3971 11.1022 19.22 10.9574L14.734 7.19743C14.4947 6.9929 14.1598 6.94275 13.8711 7.06826C13.5824 7.19377 13.3906 7.47295 13.377 7.78743V9.27043C7.079 8.17943 5.5 13.8154 5.5 16.9974C6.961 14.5734 10.747 10.1794 13.377 13.8154V15.3024C13.3888 15.6178 13.5799 15.8987 13.8689 16.0254C14.158 16.1521 14.494 16.1024 14.734 15.8974Z" stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </div>
+              <p className="text-base text-black mb-2" dangerouslySetInnerHTML={{ __html: !openedIndexes.includes(index) ? text.replace(/\\n/g, "<br/>").substring(0, maxLength) : text.replace(/\\n/g, "<br/>") }} onClick={()=>handleClick(index,item)} />
               {textTrimmed && !openedIndexes.includes(index) &&
-                <button className="flex items-center text-black font-semibold mt-2">
+                <button className="flex items-center text-black font-semibold mt-2" onClick={()=>handleClick(index,item)}>
                   Read more <span className="ml-2">→</span>
                 </button>}
               <h2 className="text-xs font-light text-black my-1 italic">- {item.author}</h2>
