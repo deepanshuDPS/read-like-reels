@@ -3,7 +3,7 @@
     content: "";
     height: 2px;
     transition: width 0.3s ease 0s, left 0.3s ease 0s;
-    @apply w-0 bg-orange-500 left-1/2 block bottom-0 absolute;
+    @apply w-0 bg-blue-600 left-1/2 block bottom-0 absolute;
   }
   .animation-active:after {
     @apply left-0 w-full;
@@ -31,7 +31,7 @@
   left: var(--left);
   width: 35px;
   height: 7px;
-  background: #ff0000;
+  background: #760dff;
   animation: dominos 1s ease infinite;
   box-shadow: 2px 2px 3px 0px black;
 }
@@ -64,15 +64,6 @@
 .spinner span:nth-child(6) {
   animation-delay: 0.79s;
   left: 30px;
-}
-
-.spinner span:nth-child(7) {
-  animation-delay: 0.915s;
-  left: 20px;
-}
-
-.spinner span:nth-child(8) {
-  left: 10px;
 }
 
 @keyframes dominos {
