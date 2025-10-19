@@ -126,6 +126,7 @@ const Pages = ({ selectedWriting }: WritingProps) => {
                 style={{ fontFamily: "Tiro Devanagari Hindi" }}
             >
                 {/* <div className="text-2xl text-center my-4">{title}</div> */}
+                <div className="mx-5 md:mx-0 text-start md:text-center text-xs text-gray-500 my-1" >Refresh the page to fix any cut-off content.</div>
                 <BookLayout pages={pages} title={title} author={selectedWriting.author} openedPages={openedPages ?? 0} />
                 {pages.length > 1 && <div className="hidden flex-row justify-center items-center my-4 md:flex">
                     {openedPages > 1 && <button
@@ -159,6 +160,8 @@ const Pages = ({ selectedWriting }: WritingProps) => {
                         }}
                         className="mx-2 text-black font-semibold text-sm cursor-pointer">Next →</button>}
                 </div>}
+                <Link className="text-blue-600 text-semibold self-center underline my-4 block md:hidden capitalize" href={selectedWriting.type =='essay'?'/?type=essay':'/?type=story'} >{`For more ${selectedWriting.type =='essay'?'essays':'stories'}, click here>>`}</Link>
+
                 {/* <div className="flex-row gap-4 w-full justify-center items-center my-4 hidden md:flex font-sans">
                     {openedPages > 1 &&
                         <button

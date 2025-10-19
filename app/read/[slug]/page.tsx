@@ -1,9 +1,14 @@
 import Pages from "@/components/Pages/Pages";
 import { createClient } from "@/utils/supabase/server";
 
+// Revalidate this page (and Supabase requests) every 60 seconds
+export const revalidate = 60;
+
 
 async function fetchWriting(slug:string) {
-  const supabase = createClient();
+  // pass the same revalidate value to the Supabase client so its
+  // network requests include Next.js caching hints
+  const supabase = createClient({ revalidate: 60 });
   return await supabase.from("writings")
     .select("*").eq("slug", slug);
 }

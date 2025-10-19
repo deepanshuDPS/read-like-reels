@@ -3,7 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 
 
 export default async function Index({ searchParams }: { searchParams: { [key: string]: string | undefined } }) {
-  const supabase = createClient();
+  const supabase = createClient({ revalidate: 60 });
   const type = searchParams.type || "quote";
   const page = parseInt(searchParams.page || "1", 10);
   const limit = 10
