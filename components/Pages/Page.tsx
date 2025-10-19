@@ -8,11 +8,18 @@ interface PageProps {
     title: string;
 }
 
+const checkContent = (content: string) => {
+    if (content.startsWith("/>")) {
+        content = content.slice(2);
+    }
+    return content;
+}
+
 export const Page: React.FC<PageProps> = ({ content, pageNo, author, title }) => (
     <div className="w-fit relative bg-[#fdfbfb] border-[1px] border-black">
         {pageNo !=1 && <div className={"text-[10px] md:text-xs text-gray-500 absolute top-6 md:top-4 font-thin right-6"}>{author}</div>}
         {pageNo !=1 && <div className={"text-xs md:text-base text-gray-500 absolute top-6 md:top-4 left-6"}>{title}</div>}
-        <div className="text-lg md:text-lg lg:text-xl w-[340px] h-[500px] md:w-[400px] lg:w-[560px] md:h-[500px] lg:h-[700px] leading-relaxed overflow-hidden px-6 pt-12" dangerouslySetInnerHTML={{ __html: content }} />
+        <div className="text-lg md:text-lg lg:text-xl w-[340px] h-[500px] md:w-[400px] lg:w-[560px] md:h-[500px] lg:h-[700px] leading-relaxed overflow-hidden px-6 pt-12" dangerouslySetInnerHTML={{ __html: checkContent(content) }} />
         <div className="text-[10px] md:text-xs text-gray-700 text-center my-1 md:my-2">{pageNo}</div>
     </div>
 );
