@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY
+  apiKey: ""
 });
 
 const generateKeywords = async (text: string) => {
@@ -32,7 +32,7 @@ const generateKeywords = async (text: string) => {
 }
 
 const generateEmbeddedText = async () => {
-  const supabase = createClient();
+  const supabase = await createClient();
   const writings = await supabase.from("writings").select("*").is("embedding", null).limit(5);
   let embedCount = writings.data?.length ?? 0
   writings.data?.forEach(async (item) => {

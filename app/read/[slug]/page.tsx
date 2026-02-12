@@ -1,39 +1,61 @@
 import Pages from "@/components/Pages/Pages";
 import { createClient } from "@/utils/supabase/server";
 
-// Revalidate this page (and Supabase requests) every 60 seconds
 export const revalidate = 60;
 
+// Fetch a single writing safely
+async function fetchWriting(slug: string) {
+  const supabase = await createClient({ revalidate: 60 });
 
-async function fetchWriting(slug:string) {
-  // pass the same revalidate value to the Supabase client so its
-  // network requests include Next.js caching hints
-  const supabase = createClient({ revalidate: 60 });
-  return await supabase.from("writings")
-    .select("*").eq("slug", slug);
+  return await supabase
+    .from("writings")
+    .select("*")
+    .eq("slug", slug)
+    .single(); // ✅ ensures only one row
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const { data, error } = await fetchWriting(params.slug);
+// ✅ Metadata (Next 14 async params compatible)
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+
+  const { data, error } = await fetchWriting(slug);
+
+  if (error || !data) {
+    return {
+      title: "Writing Not Found",
+      description: "This writing does not exist.",
+      icons: {
+        icon: "/Icon/favicon.ico",
+      },
+    };
+  }
+
   return {
-    title: (data as any[])[0].title,
-    description: (data as any[])[0].text.substring(0, 100) + "...",
+    title: data.title,
+    description: data.text?.substring(0, 100) + "...",
     icons: {
       icon: "/Icon/favicon.ico",
     },
   };
 }
 
+// ✅ Page Component (Next 14 async params compatible)
 export default async function Index({
   params,
 }: {
-  params: { slug: string };
-}){
-  
-  const { data, error } = await fetchWriting(params.slug);
-  return (
-    <>
-      <Pages selectedWriting={(data as any[])[0]} />
-    </>
-  );
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+
+  const { data, error } = await fetchWriting(slug);
+
+  if (error || !data) {
+    return <div>Writing not found.</div>;
+  }
+
+  return <Pages selectedWriting={data} />;
 }

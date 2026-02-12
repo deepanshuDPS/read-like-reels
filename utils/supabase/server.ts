@@ -1,8 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-export function createClient(opts?: { revalidate?: number }) {
-  const cookieStore = cookies()
+export async function createClient(opts?: { revalidate?: number }) {
+  const cookieStore = await cookies()
 
   // If a revalidate value is provided, wrap fetch to attach Next.js
   // caching options so Supabase network requests are cached for

@@ -5,7 +5,7 @@ import { NextApiRequest } from 'next';
 
 
 export async function POST(req: Request) {
-  var supabase = createClient()
+  var supabase = await createClient()
   var body = await new Response(req.body).json()
   let beforeReviewerHash = body.reviewer_id
 
