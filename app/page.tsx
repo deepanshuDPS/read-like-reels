@@ -2,10 +2,10 @@ import Home from "@/components/home/Home";
 import { createClient } from "@/utils/supabase/server";
 
 
-export default async function Index({ searchParams }: { searchParams: { [key: string]: string | undefined } }) {
-  const supabase = createClient({ revalidate: 60 });
-  const type = searchParams.type || "quote";
-  const page = parseInt(searchParams.page || "1", 10);
+export default async function Index({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }>; }) {
+  const supabase = await createClient({ revalidate: 60 });
+  const type = (await searchParams).type || "quote";
+  const page = parseInt((await searchParams).page || "1", 10);
   const limit = 10
   const offset = (page - 1) * limit;
 
